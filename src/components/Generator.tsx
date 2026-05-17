@@ -23,7 +23,7 @@ export default function Generator() {
   const videoRefInput = useRef<HTMLInputElement>(null);
 
   const handleGenerate = async () => {
-    if (!apiKey) {
+    if (!apiKey.trim()) {
       toast.error('Silakan masukkan API Key Magnific Anda!');
       return;
     }
@@ -53,13 +53,24 @@ export default function Generator() {
 
       const response = await fetch('/api/generate-motion', {
         method: 'POST',
-        headers: { 'Authorization': "Bearer " + apiKey },
+        headers: { 'Authorization': "Bearer " + apiKey.trim() },
         body: formData
       });
 
       const result = await response.json();
       
-      if (!response.ok) throw new Error(result.error || result.details?.message || "HTTP Error " + response.status);
+      if (!response.ok) {
+        // PERBAIKAN: Ekstrak pesan error asli dari Magnific
+        let errorMessage = "HTTP Error " + response.status;
+        if (result.details) {
+          errorMessage = typeof result.details === 'object' ? JSON.stringify(result.details) : result.details;
+          if (result.details.message) errorMessage = result.details.message;
+          if (result.details.error) errorMessage = result.details.error;
+        } else if (result.error) {
+          errorMessage = result.error;
+        }
+        throw new Error(errorMessage);
+      }
       
       setResultData(result);
       toast.success('Pipeline Berhasil Dibuat!');
@@ -271,11 +282,11 @@ export default function Generator() {
                 {isError ? 'Error System' : 'Pipeline Berhasil Dibuat!'}
               </h3>
               <p className="text-sm text-text-secondary mb-6">
-                {isError ? 'Gagal memproses permintaan.' : 'Task sedang diproses oleh server Magnific.'}
+                {isError ? 'Gagal memproses permintaan. Detail error dari server:' : 'Task sedang diproses oleh server Magnific.'}
               </p>
               <div className="w-full bg-bg-primary rounded-xl overflow-hidden border border-white/5 flex items-center justify-center p-6">
                 {isError ? (
-                  <div className="text-red-400 p-4 text-sm font-mono text-center">{String(resultData)}</div>
+                  <div className="text-red-400 p-4 text-sm font-mono text-center break-all">{String(resultData)}</div>
                 ) : (
                   <div className="text-neon-cyan p-4 text-sm font-mono text-center">
                     Task Created Successfully!<br/><br/>
