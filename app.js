@@ -280,7 +280,11 @@ function startPolling(taskId, apiKey) {
 
 async function checkTaskStatus(taskId, apiKey) {
   try {
-    var response = await fetch(CONFIG.API_BASE + '/api/task-status/' + taskId, { method: 'GET', headers: { 'Authorization': 'Bearer ' + apiKey } });
+    // INFO MODEL DITAMBAHKAN PADA URL PARAM AGAR BACKEND TAHU STATUS API MANA YANG DICEK
+    var response = await fetch(CONFIG.API_BASE + '/api/task-status/' + taskId + '?model=' + state.selectedModel, { 
+      method: 'GET', 
+      headers: { 'Authorization': 'Bearer ' + apiKey } 
+    });
     var data = await response.json();
     if (!response.ok || !data.success) { var err = new Error(data.error || 'Gagal mengecek status'); err.statusCode = data.statusCode || response.status; throw err; }
     
@@ -296,9 +300,7 @@ async function checkTaskStatus(taskId, apiKey) {
         
     var status = rawStatus.toLowerCase();
     
-    // MENCETAK DATA UTUH KE CONSOLE UNTUK DEBUG
     console.log('Polling [' + new Date().toLocaleTimeString() + '] Status:', rawStatus);
-    console.log('👇 BUKA PANAH DI BAWAH INI UNTUK MELIHAT ISI DATANYA 👇');
     console.log(taskData);
     
     updateStatusTimeline(rawStatus);
