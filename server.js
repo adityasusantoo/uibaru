@@ -1,6 +1,6 @@
 /**
  * ADITYA .AI — Backend Server
- * Proxy ke Magnific API dengan JSON body (Base64)
+ * Menghos file sementara dan mengirimkan HTTPS URL ke Magnific
  */
 
 require('dotenv').config();
@@ -17,6 +17,9 @@ const MAX_UPLOAD_MB = parseInt(process.env.MAX_UPLOAD_MB) || 115;
 
 app.use(cors());
 app.use(express.json({ limit: '200mb' }));
+
+// MENYAJIKAN FOLDER UPLOADS SECARA PUBLIK AGAR BISA DIAKSES MAGNIFIC
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.static(path.join(__dirname)));
 
 const storage = multer.diskStorage({
@@ -46,11 +49,25 @@ const upload = multer({
   limits: { fileSize: MAX_UPLOAD_MB * 1024 * 1024, files: 2 }
 });
 
-async function cleanupFiles(files) {
+// FUNGSI UNTUK MENGHAPUS FILE SECARA OTOMATIS SETELAH DELAY WAKTU (15 MENIT)
+function scheduleCleanup(files) {
+  if (!files) return;
+  const delayMs = 15 * 60 * 1000; // 15 Menit
+  setTimeout(async () => {
+    const allFiles = Array.isArray(files) ? files : Object.values(files).flat();
+    for (const file of allFiles) {
+      try { await fs.remove(file.path); console.log('Cleanup sukses:', file.filename); } 
+      catch (e) { console.warn('Cleanup error:', e.message); }
+    }
+  }, delayMs);
+}
+
+// FUNGSI UNTUK HAPUS INSTAN (JIKA TERJADI ERROR SEBELUM DIKIRIM KE MAGNIFIC)
+async function immediateCleanup(files) {
   if (!files) return;
   const allFiles = Array.isArray(files) ? files : Object.values(files).flat();
   for (const file of allFiles) {
-    try { await fs.remove(file.path); } catch (e) { console.warn('Cleanup:', e.message); }
+    try { await fs.remove(file.path); } catch (e) { }
   }
 }
 
@@ -59,13 +76,6 @@ function extractApiKey(req) {
   if (!auth) return null;
   const parts = auth.split(' ');
   return parts.length === 2 && parts[0] === 'Bearer' ? parts[1] : auth;
-}
-
-// FUNGSI UNTUK MENGUBAH FILE JADI BASE64 DATA URL
-async function fileToBase64(filePath, mimetype) {
-  const buffer = await fs.readFile(filePath);
-  const base64 = buffer.toString('base64');
-  return `data:${mimetype};base64,${base64}`;
 }
 
 function mapModelName(model) {
@@ -97,35 +107,39 @@ app.post('/api/generate-motion', upload.fields([
   let apiKey = extractApiKey(req) || process.env.MAGNIFIC_API_KEY;
 
   if (!apiKey) {
-    await cleanupFiles(files);
+    await immediateCleanup(files);
     return res.status(401).json({ success: false, error: 'API Key diperlukan.', statusCode: 401 });
   }
 
   try {
     const jsonBody = {};
+    
+    // MENDAPATKAN URL DOMAIN RAILWAY SECARA DINAMIS
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+    const host = req.get('host');
+    const baseUrl = `${protocol}://${host}`;
 
-    // UBAH FILE KE BASE64 DAN MASUKKAN KE KEY image_url
+    // BUAT LINK HTTPS PUBLIK UNTUK GAMBAR
     if (files && files.image && files.image[0]) {
       const imgFile = files.image[0];
-      console.log('Converting image to base64...', imgFile.originalname);
-      jsonBody.image_url = await fileToBase64(imgFile.path, imgFile.mimetype);
+      jsonBody.image_url = `${baseUrl}/uploads/${imgFile.filename}`;
+      console.log('Image Hosted At:', jsonBody.image_url);
     } else {
-      await cleanupFiles(files);
+      await immediateCleanup(files);
       return res.status(400).json({ success: false, error: 'Image reference wajib diupload.', statusCode: 400 });
     }
 
-    // UBAH FILE KE BASE64 DAN MASUKKAN KE KEY video_url
+    // BUAT LINK HTTPS PUBLIK UNTUK VIDEO (JIKA ADA)
     if (files && files.video && files.video[0]) {
       const vidFile = files.video[0];
-      console.log('Converting video to base64...', vidFile.originalname);
-      jsonBody.video_url = await fileToBase64(vidFile.path, vidFile.mimetype);
+      jsonBody.video_url = `${baseUrl}/uploads/${vidFile.filename}`;
+      console.log('Video Hosted At:', jsonBody.video_url);
     }
 
     if (req.body.prompt && req.body.prompt.trim()) {
       jsonBody.prompt = req.body.prompt.trim();
     }
 
-    // PARAMETER WAJIB
     jsonBody.character_orientation = "video";
 
     const cfgScale = parseFloat(req.body.cfg_scale);
@@ -136,13 +150,10 @@ app.post('/api/generate-motion', upload.fields([
     const mappedModel = mapModelName(req.body.model || 'kling-v2-standard');
     const apiUrl = getApiEndpoint(mappedModel);
 
-    await cleanupFiles(files);
-
-    console.log('--- Request ke Magnific API (JSON Base64) ---');
+    console.log('--- Request ke Magnific API (JSON URL) ---');
     console.log('Endpoint:', apiUrl);
-    console.log('---------------------------------------------');
+    console.log('------------------------------------------');
 
-    // KIRIM SEBAGAI JSON
     const magnificRes = await axios.post(
       apiUrl,
       jsonBody,
@@ -157,11 +168,15 @@ app.post('/api/generate-motion', upload.fields([
       }
     );
 
+    // JADWALKAN PENGHAPUSAN FILE NANTI (15 MENIT LAGI) AGAR MAGNIFIC BISA DOWNLOAD DULU
+    scheduleCleanup(files);
+
     console.log('Magnific Response:', magnificRes.status);
     return res.status(200).json({ success: true, data: magnificRes.data });
 
   } catch (error) {
-    await cleanupFiles(files);
+    // JIKA ERROR API, FILE BISA LANGSUNG DIHAPUS
+    await immediateCleanup(files);
     
     console.error('=== Magnific API Error ===');
     console.error('Status:', error.response?.status);
