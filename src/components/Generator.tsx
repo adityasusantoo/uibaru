@@ -60,7 +60,6 @@ export default function Generator() {
       const result = await response.json();
       
       if (!response.ok) {
-        // PERBAIKAN: Ekstrak pesan error asli dari Magnific
         let errorMessage = "HTTP Error " + response.status;
         if (result.details) {
           errorMessage = typeof result.details === 'object' ? JSON.stringify(result.details) : result.details;
@@ -117,7 +116,7 @@ export default function Generator() {
             type="password" 
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
-            placeholder="ENTER API KEY MAGNIFIC..." 
+            placeholder="MASUKKAN API KEY MAGNIFIC (Contoh: FPSXe1f...)" 
             className="w-full bg-bg-primary border border-white/5 rounded-xl px-4 py-4 text-sm font-mono text-neon-cyan focus:border-accent-blue outline-none transition-all placeholder:text-[#2a3c54]" 
           />
         </motion.div>
@@ -178,22 +177,14 @@ export default function Generator() {
           <div className="grid md:grid-cols-2 gap-8">
             <div className="space-y-3">
               <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-secondary">Duration (Seconds)</label>
-              <select 
-                value={duration}
-                onChange={(e) => setDuration(e.target.value)}
-                className="w-full bg-bg-primary border border-white/5 rounded-xl px-4 py-3 text-sm text-text-primary outline-none cursor-pointer"
-              >
+              <select value={duration} onChange={(e) => setDuration(e.target.value)} className="w-full bg-bg-primary border border-white/5 rounded-xl px-4 py-3 text-sm text-text-primary outline-none cursor-pointer">
                 <option value="5">5 Seconds</option>
                 <option value="10">10 Seconds</option>
               </select>
             </div>
             <div className="space-y-3">
               <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-secondary">Aspect Ratio</label>
-              <select 
-                value={aspectRatio}
-                onChange={(e) => setAspectRatio(e.target.value)}
-                className="w-full bg-bg-primary border border-white/5 rounded-xl px-4 py-3 text-sm text-text-primary outline-none cursor-pointer"
-              >
+              <select value={aspectRatio} onChange={(e) => setAspectRatio(e.target.value)} className="w-full bg-bg-primary border border-white/5 rounded-xl px-4 py-3 text-sm text-text-primary outline-none cursor-pointer">
                 <option value="16:9">16:9 (Landscape)</option>
                 <option value="9:16">9:16 (Portrait)</option>
                 <option value="1:1">1:1 (Square)</option>
@@ -204,36 +195,19 @@ export default function Generator() {
 
           <div className="space-y-3">
             <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-secondary flex items-center gap-2"><PenTool className="w-3 h-3"/> Positive Prompt</label>
-            <textarea 
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              rows={2} 
-              placeholder="Describe the motion dynamics..." 
-              className="w-full bg-bg-primary border border-white/5 rounded-2xl px-4 py-4 text-sm text-text-primary outline-none resize-none focus:border-accent-blue transition-all"
-            ></textarea>
+            <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} rows={2} placeholder="Describe the motion dynamics..." className="w-full bg-bg-primary border border-white/5 rounded-2xl px-4 py-4 text-sm text-text-primary outline-none resize-none focus:border-accent-blue transition-all"></textarea>
           </div>
 
           <div className="space-y-3">
             <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-secondary flex items-center gap-2"><PenTool className="w-3 h-3 text-red-400"/> Negative Prompt</label>
-            <textarea 
-              value={negativePrompt}
-              onChange={(e) => setNegativePrompt(e.target.value)}
-              rows={2} 
-              className="w-full bg-bg-primary border border-white/5 rounded-2xl px-4 py-4 text-sm text-text-primary outline-none resize-none focus:border-accent-blue transition-all"
-            ></textarea>
+            <textarea value={negativePrompt} onChange={(e) => setNegativePrompt(e.target.value)} rows={2} className="w-full bg-bg-primary border border-white/5 rounded-2xl px-4 py-4 text-sm text-text-primary outline-none resize-none focus:border-accent-blue transition-all"></textarea>
           </div>
 
           <div className="grid md:grid-cols-2 gap-8 items-center">
             <div className="space-y-3">
               <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-secondary">CFG Scale</label>
               <div className="flex items-center gap-4">
-                <input 
-                  type="range" 
-                  min="0.1" max="1.0" step="0.05" 
-                  value={cfgScale}
-                  onChange={(e) => setCfgScale(parseFloat(e.target.value))}
-                  className="flex-1"
-                />
+                <input type="range" min="0.1" max="1.0" step="0.05" value={cfgScale} onChange={(e) => setCfgScale(parseFloat(e.target.value))} className="flex-1" />
                 <span className="text-xs font-mono text-neon-cyan w-8 text-right">{cfgScale}</span>
               </div>
             </div>
@@ -244,58 +218,24 @@ export default function Generator() {
                 Generate Audio
               </label>
               <div className="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
-                <input 
-                  type="checkbox" 
-                  checked={generateAudio}
-                  onChange={(e) => setGenerateAudio(e.target.checked)}
-                  id="toggle-audio" 
-                  className="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer z-10 transition-all duration-300"
-                />
+                <input type="checkbox" checked={generateAudio} onChange={(e) => setGenerateAudio(e.target.checked)} id="toggle-audio" className="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer z-10 transition-all duration-300"/>
                 <label htmlFor="toggle-audio" className="toggle-label block overflow-hidden h-5 rounded-full bg-gray-600 cursor-pointer transition-all duration-300"></label>
               </div>
             </div>
           </div>
 
-          <button 
-            onClick={handleGenerate}
-            disabled={isGenerating}
-            className="w-full btn-primary py-5 text-base tracking-[0.1em] uppercase"
-          >
-            {isGenerating ? (
-              <><span className="spinner"></span> Processing Pipeline...</>
-            ) : (
-              'Initialize Generation Pipeline'
-            )}
+          <button onClick={handleGenerate} disabled={isGenerating} className="w-full btn-primary py-5 text-base tracking-[0.1em] uppercase">
+            {isGenerating ? ( <><span className="spinner"></span> Processing Pipeline...</> ) : ( 'Initialize Generation Pipeline' )}
           </button>
         </motion.div>
 
         <AnimatePresence>
           {resultData && (
-            <motion.div 
-              id="result-section"
-              initial={{ opacity: 0, y: 20, height: 0 }}
-              animate={{ opacity: 1, y: 0, height: 'auto' }}
-              exit={{ opacity: 0, y: -20, height: 0 }}
-              className="glass-card p-8 flex flex-col items-center justify-center text-center mt-6"
-            >
-              <h3 className={"text-lg font-bold mb-2 " + (isError ? 'text-red-500' : 'text-green-400')}>
-                {isError ? 'Error System' : 'Pipeline Berhasil Dibuat!'}
-              </h3>
-              <p className="text-sm text-text-secondary mb-6">
-                {isError ? 'Gagal memproses permintaan. Detail error dari server:' : 'Task sedang diproses oleh server Magnific.'}
-              </p>
+            <motion.div id="result-section" initial={{ opacity: 0, y: 20, height: 0 }} animate={{ opacity: 1, y: 0, height: 'auto' }} exit={{ opacity: 0, y: -20, height: 0 }} className="glass-card p-8 flex flex-col items-center justify-center text-center mt-6">
+              <h3 className={"text-lg font-bold mb-2 " + (isError ? 'text-red-500' : 'text-green-400')}>{isError ? 'Error System' : 'Pipeline Berhasil Dibuat!'}</h3>
+              <p className="text-sm text-text-secondary mb-6">{isError ? 'Gagal memproses permintaan. Detail error dari server:' : 'Task sedang diproses oleh server Magnific.'}</p>
               <div className="w-full bg-bg-primary rounded-xl overflow-hidden border border-white/5 flex items-center justify-center p-6">
-                {isError ? (
-                  <div className="text-red-400 p-4 text-sm font-mono text-center break-all">{String(resultData)}</div>
-                ) : (
-                  <div className="text-neon-cyan p-4 text-sm font-mono text-center">
-                    Task Created Successfully!<br/><br/>
-                    <span className="text-white bg-blue-900/50 px-4 py-2 rounded-lg inline-block my-2 border border-accent-blue/30">
-                      Task ID: {resultData.id || resultData.task_id || 'N/A'}
-                    </span><br/><br/>
-                    <span className="text-xs text-text-secondary">(Silakan periksa dashboard Magnific Anda)</span>
-                  </div>
-                )}
+                {isError ? ( <div className="text-red-400 p-4 text-sm font-mono text-center break-all">{String(resultData)}</div> ) : ( <div className="text-neon-cyan p-4 text-sm font-mono text-center">Task Created Successfully!<br/><br/><span className="text-white bg-blue-900/50 px-4 py-2 rounded-lg inline-block my-2 border border-accent-blue/30">Task ID: {resultData.id || resultData.task_id || 'N/A'}</span><br/><br/><span className="text-xs text-text-secondary">(Silakan periksa dashboard Magnific Anda)</span></div> )}
               </div>
             </motion.div>
           )}
