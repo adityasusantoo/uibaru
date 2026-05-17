@@ -1,6 +1,6 @@
 /**
  * ADITYA .AI — Backend Server
- * Proxy ke Magnific API dengan Multipart Form-Data (Upload Langsung)
+ * Proxy ke Magnific API dengan JSON body (Base64)
  */
 
 require('dotenv').config();
@@ -8,7 +8,6 @@ const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
 const axios = require('axios');
-const FormData = require('form-data');
 const fs = require('fs-extra');
 const path = require('path');
 
@@ -62,16 +61,19 @@ function extractApiKey(req) {
   return parts.length === 2 && parts[0] === 'Bearer' ? parts[1] : auth;
 }
 
+// FUNGSI UNTUK MENGUBAH FILE JADI BASE64 DATA URL
+async function fileToBase64(filePath, mimetype) {
+  const buffer = await fs.readFile(filePath);
+  const base64 = buffer.toString('base64');
+  return `data:${mimetype};base64,${base64}`;
+}
+
 function mapModelName(model) {
   const modelMap = {
     'kling-v2-standard': 'kling-v2-standard',
     'kling-v2-pro': 'kling-v2-pro',
     'kling-v3-standard': 'kling-v3-standard',
-    'kling-v3-pro': 'kling-v3-pro',
-    'kling-2.6-std': 'kling-v2-standard',
-    'kling-2.6-pro': 'kling-v2-pro',
-    'kling-3.0-std': 'kling-v3-standard',
-    'kling-3.0-pro': 'kling-v3-pro',
+    'kling-v3-pro': 'kling-v3-pro'
   };
   return modelMap[model] || model;
 }
@@ -100,49 +102,54 @@ app.post('/api/generate-motion', upload.fields([
   }
 
   try {
-    const formData = new FormData();
+    const jsonBody = {};
 
+    // UBAH FILE KE BASE64 DAN MASUKKAN KE KEY image_url
     if (files && files.image && files.image[0]) {
       const imgFile = files.image[0];
-      console.log('Attaching image file...', imgFile.originalname);
-      formData.append('image', fs.createReadStream(imgFile.path));
+      console.log('Converting image to base64...', imgFile.originalname);
+      jsonBody.image_url = await fileToBase64(imgFile.path, imgFile.mimetype);
     } else {
       await cleanupFiles(files);
       return res.status(400).json({ success: false, error: 'Image reference wajib diupload.', statusCode: 400 });
     }
 
+    // UBAH FILE KE BASE64 DAN MASUKKAN KE KEY video_url
     if (files && files.video && files.video[0]) {
       const vidFile = files.video[0];
-      console.log('Attaching video file...', vidFile.originalname);
-      formData.append('video', fs.createReadStream(vidFile.path));
+      console.log('Converting video to base64...', vidFile.originalname);
+      jsonBody.video_url = await fileToBase64(vidFile.path, vidFile.mimetype);
     }
 
     if (req.body.prompt && req.body.prompt.trim()) {
-      formData.append('prompt', req.body.prompt.trim());
+      jsonBody.prompt = req.body.prompt.trim();
     }
 
-    formData.append('character_orientation', 'video');
+    // PARAMETER WAJIB
+    jsonBody.character_orientation = "video";
 
     const cfgScale = parseFloat(req.body.cfg_scale);
     if (!isNaN(cfgScale)) {
-      formData.append('cfg_scale', cfgScale);
+      jsonBody.cfg_scale = cfgScale;
     }
 
     const mappedModel = mapModelName(req.body.model || 'kling-v2-standard');
     const apiUrl = getApiEndpoint(mappedModel);
 
-    console.log('--- Request ke Magnific API (Multipart Upload) ---');
-    console.log('Endpoint:', apiUrl);
-    console.log('Model:', mappedModel);
-    console.log('--------------------------------------------------');
+    await cleanupFiles(files);
 
+    console.log('--- Request ke Magnific API (JSON Base64) ---');
+    console.log('Endpoint:', apiUrl);
+    console.log('---------------------------------------------');
+
+    // KIRIM SEBAGAI JSON
     const magnificRes = await axios.post(
       apiUrl,
-      formData,
+      jsonBody,
       {
         headers: { 
           'x-magnific-api-key': apiKey, 
-          ...formData.getHeaders() 
+          'Content-Type': 'application/json' 
         },
         maxContentLength: Infinity, 
         maxBodyLength: Infinity, 
@@ -150,7 +157,6 @@ app.post('/api/generate-motion', upload.fields([
       }
     );
 
-    await cleanupFiles(files);
     console.log('Magnific Response:', magnificRes.status);
     return res.status(200).json({ success: true, data: magnificRes.data });
 
@@ -199,10 +205,6 @@ app.get('/api/task-status/:taskId', async (req, res) => {
       statusApiUrl,
       { headers: { 'x-magnific-api-key': apiKey }, timeout: 30000 }
     );
-
-    console.log('=== Task Status ===');
-    console.log('Task ID:', req.params.taskId, '| Model:', model);
-    console.log('===================');
 
     return res.status(200).json({ success: true, data: magnificRes.data });
 
