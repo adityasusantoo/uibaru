@@ -109,15 +109,36 @@
 
       <span class="text-white font-extrabold uppercase tracking-[0.18em] text-sm">
         Mulai Membuat
+        
       </span>
 
     </span>
 
   </a>
-
+<div class="flex justify-center mt-4 overflow-hidden">
+    <div class="animate-left-right whitespace-nowrap inline-flex items-center px-3 py-1 rounded-full border border-blue-500/20 bg-blue-500/5 text-[#38BDF8] text-xs font-bold tracking-widest uppercase">
+        ✨ MOTION CONTROL GRATIS TIDAK DI PERJUAL BELIKAN ✨
+    </div>
 </div>
-  </section>
 
+<style>
+@keyframes leftRight {
+    0% {
+        transform: translateX(-10px);
+    }
+    50% {
+        transform: translateX(20px);
+    }
+    100% {
+        transform: translateX(-10px);
+    }
+}
+
+.animate-left-right {
+    animation: leftRight 3s ease-in-out infinite;
+}
+</style>
+</style>
   <!-- DASHBOARD -->
   <section id="dashboard" class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 pt-8">
     <div class="text-center mb-12">
