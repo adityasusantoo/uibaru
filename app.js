@@ -199,10 +199,14 @@ function updateStatusTimeline(status) {
   else if (l === 'processing' || l === 'running' || l === 'in_progress') n = 'processing';
   else if (l === 'completed' || l === 'complete' || l === 'done' || l === 'success' || l === 'finished' || l === 'succeeded' || l === 'ready') n = 'completed';
   else if (l === 'failed' || l === 'error') n = 'failed';
+  
   var steps = ['queued', 'processing', 'completed'];
   var colors = { queued: { d: 'bg-amber-400', t: 'text-amber-400' }, processing: { d: 'bg-neon-cyan', t: 'text-neon-cyan' }, completed: { d: 'bg-neon-green', t: 'text-neon-green' }, failed: { d: 'bg-neon-pink', t: 'text-neon-pink' } };
+  
   steps.forEach(function(s) { var el = document.getElementById('step-' + s); if (!el) return; el.querySelector('.status-dot').className = 'status-dot bg-gray-700'; el.querySelector('span').className = 'text-sm text-gray-600'; el.querySelector('span').textContent = s.charAt(0).toUpperCase() + s.slice(1); });
+  
   if (n === 'failed') { var ps = document.getElementById('step-processing'); if (ps) { ps.querySelector('.status-dot').className = 'status-dot ' + colors.failed.d + ' active'; ps.querySelector('span').className = 'text-sm ' + colors.failed.t; ps.querySelector('span').textContent = 'Failed'; } return; }
+  
   var ci = steps.indexOf(n); if (ci === -1) return;
   for (var i = 0; i <= ci; i++) { var el = document.getElementById('step-' + steps[i]); if (!el) continue; var c = colors[steps[i]]; el.querySelector('.status-dot').className = 'status-dot ' + c.d + (i === ci ? ' active pulse' : ''); el.querySelector('span').className = 'text-sm ' + c.t; }
 }
@@ -214,7 +218,6 @@ async function generateMotion() {
 
   state.isProcessing = true; DOM.generateBtn.disabled = true; DOM.generateBtnText.textContent = 'Generating...';
   
-  // PERBAIKAN 1: Menambahkan spinner Tailwind
   var spinner = document.createElement('span'); 
   spinner.className = 'spinner animate-spin'; 
   DOM.generateBtn.insertBefore(spinner, DOM.generateBtn.firstChild);
@@ -223,9 +226,8 @@ async function generateMotion() {
 
   DOM.statusCard.classList.add('status-processing-glow');
   
-  // PERBAIKAN 2: Icon loading putar
   DOM.statusIcon.className = 'w-8 h-8 rounded-lg bg-neon-cyan/10 flex items-center justify-center';
-  DOM.statusIcon.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin text-neon-cyan text-lg"></i>';
+  DOM.statusIcon.innerHTML = '<i class="fa-solid fa-circle-notch animate-spin text-neon-cyan text-lg"></i>';
   DOM.statusTitle.textContent = 'Creating Task...'; DOM.statusTitle.classList.add('loading-pulse');
   DOM.statusSubtitle.textContent = 'Mengirim request ke Magnific API...';
   updateStatusTimeline('queued'); hideCard(DOM.taskIdSection); DOM.pollingInfo.style.display = 'none';
@@ -261,8 +263,7 @@ async function generateMotion() {
     DOM.statusSubtitle.textContent = 'AI sedang memproses video Anda...';
     DOM.statusIcon.className = 'w-8 h-8 rounded-lg bg-neon-blue/10 flex items-center justify-center';
     
-    // PERBAIKAN 3: Icon putar untuk tahap processing
-    DOM.statusIcon.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin text-neon-cyan text-lg"></i>';
+    DOM.statusIcon.innerHTML = '<i class="fa-solid fa-circle-notch animate-spin text-neon-cyan text-lg"></i>';
     updateStatusTimeline('processing');
     startPolling(taskId, apiKey);
   } catch (error) { 
@@ -284,17 +285,25 @@ async function checkTaskStatus(taskId, apiKey) {
     if (!response.ok || !data.success) { var err = new Error(data.error || 'Gagal mengecek status'); err.statusCode = data.statusCode || response.status; throw err; }
     
     var taskData = data.data;
-    var rawStatus = (taskData && taskData.status) || 'unknown';
+    
+    // MENCARI STATUS DI BERBAGAI KEMUNGKINAN NAMA LABEL
+    var rawStatus = 
+        (taskData && taskData.status) || 
+        (taskData && taskData.state) || 
+        (taskData && taskData.task_status) || 
+        (taskData && taskData.data && taskData.data.status) || 
+        'unknown';
+        
     var status = rawStatus.toLowerCase();
     
+    // MENCETAK DATA UTUH KE CONSOLE UNTUK DEBUG
     console.log('Polling [' + new Date().toLocaleTimeString() + '] Status:', rawStatus);
-    if (taskData && taskData.generated) console.log('Generated:', JSON.stringify(taskData.generated).substring(0, 500));
-    if (taskData && taskData.result) console.log('Result:', JSON.stringify(taskData.result).substring(0, 500));
-    if (taskData && taskData.output) console.log('Output:', JSON.stringify(taskData.output).substring(0, 500));
+    console.log('👇 BUKA PANAH DI BAWAH INI UNTUK MELIHAT ISI DATANYA 👇');
+    console.log(taskData);
     
     updateStatusTimeline(rawStatus);
     
-    if (status === 'created' || status === 'queued' || status === 'pending') { 
+    if (status === 'created' || status === 'queued' || status === 'pending' || status === 'unknown') { 
         DOM.statusSubtitle.textContent = 'Task dalam antrian, menunggu diproses...'; 
         DOM.statusTitle.textContent = 'Queued'; 
         DOM.statusTitle.classList.add('loading-dots'); 
@@ -305,7 +314,6 @@ async function checkTaskStatus(taskId, apiKey) {
         DOM.statusTitle.classList.add('loading-dots'); 
     }
     
-    // PERBAIKAN 4: Tambah status kondisi sukses
     if (status === 'completed' || status === 'complete' || status === 'done' || status === 'success' || status === 'finished' || status === 'succeeded' || status === 'ready') { 
         stopPolling(); 
         handleGenerationComplete(taskData); 
