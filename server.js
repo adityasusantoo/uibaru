@@ -1,7 +1,7 @@
 /**
- * ADITYA .AI — Backend Server
+ * ADITYA .AI — Backend Server (Vercel Serverless Version)
  * Mendukung Penuh: Kling V2 Standard, Kling V2 Pro, Kling V3 Standard, Kling V3 Pro
- * Fitur: Auto HTTPS File Hosting & Multi-Endpoint Status Scan Matrix (Tanpa Proxy)
+ * Fitur: Vercel /tmp Writable Storage Hosting & Multi-Endpoint Status Scan Matrix
  */
 
 require('dotenv').config();
@@ -19,14 +19,16 @@ const MAX_UPLOAD_MB = parseInt(process.env.MAX_UPLOAD_MB) || 115;
 app.use(cors());
 app.use(express.json({ limit: '200mb' }));
 
-// Menyajikan folder uploads secara publik agar file bisa di-download oleh server Magnific
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// SEBATAS PENGGUNAAN FOLDER /tmp KARENA HANYA INI YANG BERSIFAT WRITABLE DI VERCEL
+const uploadDir = '/tmp';
+fs.ensureDirSync(uploadDir);
+
+// Menyajikan folder /tmp secara publik lewat route /uploads agar file bisa di-download oleh server Magnific
+app.use('/uploads', express.static(uploadDir));
 app.use(express.static(path.join(__dirname)));
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, 'uploads');
-    fs.ensureDirSync(uploadDir);
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
@@ -267,6 +269,11 @@ app.use((err, req, res, next) => {
   next();
 });
 
-app.listen(PORT, () => {
-  console.log('\n  ADITYA .AI Server Running on http://localhost:' + PORT + '\n');
-});
+// DIUBAH MENJADI EKSPOR UNTUK MODEL SERVERLESS ENVIRONMENT VERCEL
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log('\n  ADITYA .AI Server Running on http://localhost:' + PORT + '\n');
+  });
+}
+
+module.exports = app;
