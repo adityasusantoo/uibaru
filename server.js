@@ -114,12 +114,10 @@ app.post('/api/generate-motion', upload.fields([
   try {
     const jsonBody = {};
     
-    // MENDAPATKAN URL DOMAIN RAILWAY SECARA DINAMIS
     const protocol = req.headers['x-forwarded-proto'] || req.protocol;
     const host = req.get('host');
     const baseUrl = `${protocol}://${host}`;
 
-    // BUAT LINK HTTPS PUBLIK UNTUK GAMBAR
     if (files && files.image && files.image[0]) {
       const imgFile = files.image[0];
       jsonBody.image_url = `${baseUrl}/uploads/${imgFile.filename}`;
@@ -129,7 +127,6 @@ app.post('/api/generate-motion', upload.fields([
       return res.status(400).json({ success: false, error: 'Image reference wajib diupload.', statusCode: 400 });
     }
 
-    // BUAT LINK HTTPS PUBLIK UNTUK VIDEO (JIKA ADA)
     if (files && files.video && files.video[0]) {
       const vidFile = files.video[0];
       jsonBody.video_url = `${baseUrl}/uploads/${vidFile.filename}`;
@@ -168,14 +165,12 @@ app.post('/api/generate-motion', upload.fields([
       }
     );
 
-    // JADWALKAN PENGHAPUSAN FILE NANTI (15 MENIT LAGI) AGAR MAGNIFIC BISA DOWNLOAD DULU
     scheduleCleanup(files);
 
     console.log('Magnific Response:', magnificRes.status);
     return res.status(200).json({ success: true, data: magnificRes.data });
 
   } catch (error) {
-    // JIKA ERROR API, FILE BISA LANGSUNG DIHAPUS
     await immediateCleanup(files);
     
     console.error('=== Magnific API Error ===');
@@ -213,8 +208,10 @@ app.get('/api/task-status/:taskId', async (req, res) => {
   if (!apiKey) return res.status(401).json({ success: false, error: 'API Key diperlukan.', statusCode: 401 });
 
   try {
-    const model = req.query.model || 'kling-v2-standard';
-    const statusApiUrl = `${getApiEndpoint(model)}/${req.params.taskId}`;
+    // FIX FINAL: Menggunakan global status endpoint Magnific video agar tidak terjadi 404 Not Found
+    const statusApiUrl = `https://api.magnific.com/v1/ai/video/${req.params.taskId}`;
+
+    console.log('Checking status at:', statusApiUrl);
 
     const magnificRes = await axios.get(
       statusApiUrl,
@@ -224,6 +221,23 @@ app.get('/api/task-status/:taskId', async (req, res) => {
     return res.status(200).json({ success: true, data: magnificRes.data });
 
   } catch (error) {
+    // FALLBACK: Jika URL global error, coba gunakan URL spesifik model sebagai cadangan
+    if (error.response?.status === 404) {
+      try {
+        const model = req.query.model || 'kling-v2-standard';
+        const fallbackUrl = `${getApiEndpoint(model)}/${req.params.taskId}`;
+        console.log('404 encountered, trying fallback URL:', fallbackUrl);
+        
+        const magnificRes = await axios.get(
+          fallbackUrl,
+          { headers: { 'x-magnific-api-key': apiKey }, timeout: 30000 }
+        );
+        return res.status(200).json({ success: true, data: magnificRes.data });
+      } catch (fallbackError) {
+        console.error('All Status Check Endpoints Failed');
+      }
+    }
+
     console.error('Status Check Error:', error.response?.data || error.message);
     const statusCode = error.response?.status || 500;
     const errorMsg = error.response?.data?.error || error.response?.data?.message || error.response?.data?.detail || error.message || 'Gagal mengecek status';
