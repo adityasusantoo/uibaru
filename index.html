@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ADITYA .AI — AI Motion Control Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { 'jakarta': ['"Plus Jakarta Sans"', 'sans-serif'] },
+          colors: {
+            'cyber': { 950: '#030712', 900: '#060b1a', 800: '#0a0e27', 700: '#0f1535', 600: '#1a1f4e', 500: '#252b6a' },
+            'neon': { cyan: '#00e5ff', blue: '#4d7cff', purple: '#8b5cf6', green: '#00ff88', pink: '#ff006e' }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="font-jakarta bg-cyber-950 text-white min-h-screen overflow-x-hidden">
+
+  <!-- BACKGROUND -->
+  <div class="fixed inset-0 z-0 pointer-events-none">
+    <div class="mesh-gradient"></div>
+    <div class="floating-orb orb-1"></div>
+    <div class="floating-orb orb-2"></div>
+    <div class="floating-orb orb-3"></div>
+    <div class="floating-orb orb-4"></div>
+    <div class="grid-overlay"></div>
+  </div>
+
+  <!-- NAVBAR -->
+  <nav class="fixed top-0 left-0 right-0 z-50 glass-nav">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-neon-cyan to-neon-blue flex items-center justify-center">
+            <i class="fa-solid fa-bolt text-cyber-950 text-sm"></i>
+          </div>
+          <span class="text-xl font-extrabold tracking-tight"><span class="text-white">ADITYA</span><span class="text-neon-cyan"> .AI</span></span>
+        </div>
+       <!-- Setelah baris API Key status, tambahkan: -->
+<div class="mt-3">
+    <a href="https://www.magnific.com/" target="_blank" class="inline-block border-2 border-[#3B82F6] bg-[#3B82F6] text-white px-6 py-2.5 text-sm uppercase tracking-wider font-bold rounded-lg hover:bg-transparent hover:text-[#3B82F6] transition-all duration-300 w-full text-center">
+        AMBIL KEY MAGNIFIC DISINI
+    </a>
+</div>
+      <!-- Setelah baris API Key status, tambahkan: -->
+<div class="mt-3">
+    <a href="https://www.facebook.com/Aditya.su.ll/" target="_blank" class="inline-block border-2 border-[#3B82F6] bg-[#3B82F6] text-white px-6 py-2.5 text-sm uppercase tracking-wider font-bold rounded-lg hover:bg-transparent hover:text-[#3B82F6] transition-all duration-300 w-full text-center">
+      CS ADMIN     </a>
+</div>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="w-2 h-2 rounded-full bg-neon-green animate-pulse"></div>
+          <span class="text-xs text-gray-500">System Online</span>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section id="hero" class="relative z-10 min-h-[70vh] flex flex-col items-center justify-center text-center px-4 pt-20">
+           <div class="relative animate-float w-full max-w-lg mx-auto">
+    <div class="absolute -inset-1.5 bg-gradient-to-r from-neon-blue via-neon-cyan to-neon-purple rounded-[2rem] blur-xl opacity-40"></div>
+    
+    <div class="relative bg-[#060b1a]/80 backdrop-blur-xl rounded-2xl aspect-video overflow-hidden border border-white/10 shadow-2xl group">
+        
+        <img src="https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3Nzh3MXRuZzl5bmZzcmYyZmt4aGoybnpicHB0eXk5aWhoNm5nOHZ0cCZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/YCpFxyaXQHfC9KpwKq/giphy.gif" 
+             class="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105" 
+             alt="Hero Visualization">
+             
+        <div class="absolute inset-0 bg-gradient-to-t from-[#030712]/90 via-[#030712]/30 to-transparent"></div>
+        
+        <div class="absolute bottom-5 left-5 inline-flex items-center gap-3 px-4 py-2 rounded-xl bg-white/5 backdrop-blur-md border border-white/10 shadow-lg transition-all duration-300 hover:bg-white/10 hover:border-white/20">
+            <div class="relative flex h-2 w-2">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-neon-green opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-neon-green shadow-[0_0_8px_#00ff88]"></span>
+            </div>
+            <span class="text-[11px] font-bold tracking-[0.2em] text-white/90 drop-shadow-md">KLING AI GRATIS</span>
+        </div> 
+
+    </div>
+</div>
+</div>
+    <p class="mt-6 text-lg sm:text-xl text-gray-400 max-w-2xl leading-relaxed hero-fade" style="animation-delay:0.5s">Teknologi video AI premium yang membantu content creator dan affiliate menciptakan konten berkualitas tinggi dengan cepat, presisi, dan visual yang memukau.</p>
+    <div class="mt-10">
+    
+  <a href="#dashboard"
+     class="group relative inline-flex items-center justify-center overflow-hidden rounded-2xl p-[1.5px]
+     bg-gradient-to-r from-cyan-400 via-sky-500 to-blue-600
+     shadow-[0_0_25px_rgba(0,229,255,0.25)]
+     hover:shadow-[0_0_60px_rgba(0,229,255,0.55)]
+     hover:scale-105 transition-all duration-500">
+
+    <span class="relative flex items-center gap-3 px-8 py-4 rounded-2xl bg-[#071426]/95 backdrop-blur-xl">
+
+      <span class="flex items-center justify-center w-10 h-10 rounded-full
+                   bg-gradient-to-br from-cyan-400 to-blue-500">
+        <i class="fa-solid fa-rocket text-white text-sm"></i>
+      </span>
+
+      <span class="text-white font-extrabold uppercase tracking-[0.18em] text-sm">
+        Mulai Membuat
+        
+      </span>
+
+    </span>
+
+  </a>
+<div class="flex justify-center mt-4 overflow-hidden">
+    <div class="animate-left-right whitespace-nowrap inline-flex items-center px-3 py-1 rounded-full border border-blue-500/20 bg-blue-500/5 text-[#38BDF8] text-xs font-bold tracking-widest uppercase">
+        ✨ GRATIS TIDAK DI PERJUAL BELIKAN ✨
+    </div>
+</div>
+
+<style>
+@keyframes leftRight {
+    0% {
+        transform: translateX(-10px);
+    }
+    50% {
+        transform: translateX(20px);
+    }
+    100% {
+        transform: translateX(-10px);
+    }
+}
+
+.animate-left-right {
+    animation: leftRight 3s ease-in-out infinite;
+}
+</style>
+</style>
+  <!-- DASHBOARD -->
+  <section id="dashboard" class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 pt-8">
+    <div class="text-center mb-12">
+      <h2 class="text-2xl sm:text-3xl font-bold mb-3"><i ></i></h2>
+      <p class="text-gray-500 text-sm">
+        
+        
+        
+        
+        
+        
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+      <!-- LEFT COLUMN -->
+      <div class="space-y-6">
+
+        <!-- API Key -->
+        <div class="glass-card glow-hover p-6">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-8 h-8 rounded-lg bg-neon-cyan/10 flex items-center justify-center"><i class="fa-solid fa-key text-neon-cyan text-sm"></i></div>
+            <h3 class="font-semibold text-white">API Key</h3>
+            <span class="ml-auto text-xs text-gray-600">Required</span>
+          </div>
+          <div class="relative">
+            <input type="password" id="apiKeyInput" placeholder="Masukkan Magnific API Key..." class="w-full bg-cyber-900/80 border border-white/5 rounded-xl px-4 py-3 pr-12 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-neon-cyan/40 focus:shadow-[0_0_20px_rgba(0,229,255,0.1)] transition-all duration-300">
+            <button id="toggleApiKey" type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-neon-cyan transition-colors"><i class="fa-solid fa-eye text-sm"></i></button>
+          </div>
+          <div class="mt-2 flex items-center gap-2"><div id="apiKeyStatus" class="w-2 h-2 rounded-full bg-gray-700"></div><span id="apiKeyStatusText" class="text-xs text-gray-600">Belum diatur</span></div>
+        </div>
+
+        <!-- Upload -->
+        <div class="glass-card glow-hover p-6">
+          <div class="flex items-center gap-3 mb-5">
+            <div class="w-8 h-8 rounded-lg bg-neon-blue/10 flex items-center justify-center"><i class="fa-solid fa-cloud-arrow-up text-neon-blue text-sm"></i></div>
+            <h3 class="font-semibold text-white">Upload References</h3>
+          </div>
+          <div class="mb-4">
+            <label class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2 block"><i class="fa-solid fa-image mr-1 text-neon-cyan"></i> Image Reference <span class="text-neon-pink">*</span></label>
+            <div id="imageDropZone" class="upload-zone relative border-2 border-dashed border-white/10 rounded-xl p-6 text-center cursor-pointer transition-all duration-300 hover:border-neon-cyan/30">
+              <div id="imagePlaceholder"><i class="fa-solid fa-image text-3xl text-gray-700 mb-3"></i><p class="text-sm text-gray-500">Drag & drop image atau <span class="text-neon-cyan">klik untuk browse</span></p><p class="text-xs text-gray-700 mt-1">JPG, PNG, WebP, GIF — Max 20MB</p></div>
+              <div id="imagePreview" class="hidden mb-3"><img id="imageThumb" class="max-h-32 mx-auto rounded-lg object-contain" alt="Preview"></div>
+              <div id="imageFileInfo" class="hidden"><p id="imageFileName" class="text-sm text-white font-medium truncate"></p><p id="imageFileSize" class="text-xs text-gray-500"></p></div>
+              <button type="button" id="removeImage" class="hidden absolute top-2 right-2 w-7 h-7 rounded-lg bg-red-500/20 text-red-400 flex items-center justify-center hover:bg-red-500/30 transition-colors"><i class="fa-solid fa-xmark text-xs"></i></button>
+            </div>
+            <input type="file" id="imageInput" accept="image/jpeg,image/png,image/webp,image/gif" style="position:absolute;opacity:0;width:0;height:0;pointer-events:none;">
+          </div>
+          <div>
+            <label class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2 block"><i class="fa-solid fa-video mr-1 text-neon-blue"></i> Video Reference <span class="text-gray-700">(Optional)</span></label>
+            <div id="videoDropZone" class="upload-zone relative border-2 border-dashed border-white/10 rounded-xl p-6 text-center cursor-pointer transition-all duration-300 hover:border-neon-blue/30">
+              <div id="videoPlaceholder"><i class="fa-solid fa-film text-3xl text-gray-700 mb-3"></i><p class="text-sm text-gray-500">Drag & drop video atau <span class="text-neon-blue">klik untuk browse</span></p><p class="text-xs text-gray-700 mt-1">MP4, MOV, WebM — Max 115MB</p></div>
+              <div id="videoPreview" class="hidden mb-3"><video id="videoThumb" class="max-h-32 mx-auto rounded-lg" muted></video></div>
+              <div id="videoFileInfo" class="hidden"><p id="videoFileName" class="text-sm text-white font-medium truncate"></p><p id="videoFileSize" class="text-xs text-gray-500"></p></div>
+              <button type="button" id="removeVideo" class="hidden absolute top-2 right-2 w-7 h-7 rounded-lg bg-red-500/20 text-red-400 flex items-center justify-center hover:bg-red-500/30 transition-colors"><i class="fa-solid fa-xmark text-xs"></i></button>
+            </div>
+            <input type="file" id="videoInput" accept="video/mp4,video/quicktime,video/webm" style="position:absolute;opacity:0;width:0;height:0;pointer-events:none;">
+          </div>
+        </div>
+
+        <!-- Settings -->
+        <div class="glass-card glow-hover p-6">
+          <div class="flex items-center gap-3 mb-5">
+            <div class="w-8 h-8 rounded-lg bg-neon-purple/10 flex items-center justify-center"><i class="fa-solid fa-sliders text-neon-purple text-sm"></i></div>
+            <h3 class="font-semibold text-white">Generation Settings</h3>
+          </div>
+          <div class="mb-5">
+            <label class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2 block"><i class="fa-solid fa-pen-fancy mr-1 text-neon-purple"></i> Motion Prompt</label>
+            <textarea id="promptInput" rows="3" placeholder="Deskripsikan gerakan yang diinginkan..." class="w-full bg-cyber-900/80 border border-white/5 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 resize-none focus:outline-none focus:border-neon-cyan/40 focus:shadow-[0_0_20px_rgba(0,229,255,0.1)] transition-all duration-300"></textarea>
+          </div>
+          <div class="mb-5">
+            <label class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3 block"><i class="fa-solid fa-microchip mr-1 text-neon-green"></i> AI Model</label>
+            <div class="grid grid-cols-2 gap-2" id="modelSelector">
+              <button type="button" data-model="kling-v2-standard" class="model-btn active"><span class="model-btn-name">Kling V2</span><span class="model-btn-tag">Standard</span></button>
+              <button type="button" data-model="kling-v2-pro" class="model-btn"><span class="model-btn-name">Kling V2</span><span class="model-btn-tag">Pro</span></button>
+              <button type="button" data-model="kling-v3-standard" class="model-btn"><span class="model-btn-name">Kling V3</span><span class="model-btn-tag">Standard</span></button>
+              <button type="button" data-model="kling-v3-pro" class="model-btn"><span class="model-btn-name">Kling V3</span><span class="model-btn-tag">Pro</span></button>
+            </div>
+          </div>
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <label class="text-xs font-medium text-gray-400 uppercase tracking-wider"><i class="fa-solid fa-gauge-high mr-1 text-neon-cyan"></i> CFG Scale</label>
+              <span id="cfgValue" class="text-sm font-bold text-neon-cyan font-mono">0.50</span>
+            </div>
+            <input type="range" id="cfgSlider" min="0" max="1" step="0.05" value="0.5" class="custom-range w-full">
+            <div class="flex justify-between text-xs text-gray-700 mt-1"><span>0.00</span><span>0.50</span><span>1.00</span></div>
+          </div>
+        </div>
+
+        <!-- Generate Button -->
+        <button id="generateBtn" class="generate-btn w-full py-4 rounded-xl font-bold text-base tracking-wide transition-all duration-300 flex items-center justify-center gap-3">
+          <i class="fa-solid fa-wand-magic-sparkles"></i><span id="generateBtnText">Generate Motion</span>
+        </button>
+      </div>
+
+      <!-- RIGHT COLUMN -->
+      <div class="space-y-6">
+
+        <!-- Status Card -->
+        <div id="statusCard" class="glass-card p-6 hidden">
+          <div class="flex items-center gap-3 mb-4">
+            <div id="statusIcon" class="w-8 h-8 rounded-lg flex items-center justify-center"><i class="fa-solid fa-spinner fa-spin text-sm"></i></div>
+            <div><h3 id="statusTitle" class="font-semibold text-white">Processing</h3><p id="statusSubtitle" class="text-xs text-gray-500">Menunggu respons...</p></div>
+          </div>
+          <div id="taskIdSection" class="hidden mb-4">
+            <div class="flex items-center gap-2 bg-cyber-900/80 rounded-lg px-3 py-2">
+              <span class="text-xs text-gray-500">Task ID:</span><code id="taskIdDisplay" class="text-xs text-neon-cyan font-mono flex-1 truncate"></code>
+              <button id="copyTaskId" class="text-gray-600 hover:text-neon-cyan transition-colors"><i class="fa-solid fa-copy text-xs"></i></button>
+            </div>
+          </div>
+          <div id="statusTimeline" class="space-y-3">
+            <div class="flex items-center gap-3" id="step-queued"><div class="status-dot bg-gray-700"></div><span class="text-sm text-gray-600">Queued</span></div>
+            <div class="flex items-center gap-3" id="step-processing"><div class="status-dot bg-gray-700"></div><span class="text-sm text-gray-600">Processing</span></div>
+            <div class="flex items-center gap-3" id="step-completed"><div class="status-dot bg-gray-700"></div><span class="text-sm text-gray-600">Completed</span></div>
+          </div>
+          <p id="pollingInfo" class="text-xs text-gray-700 mt-4"><i class="fa-solid fa-rotate fa-spin mr-1"></i> Auto-checking setiap 10 detik...</p>
+        </div>
+
+        <!-- Result Card -->
+        <div id="resultCard" class="glass-card p-6 hidden">
+          <div class="flex items-center gap-3 mb-5">
+            <div class="w-8 h-8 rounded-lg bg-neon-green/10 flex items-center justify-center"><i class="fa-solid fa-circle-check text-neon-green text-sm"></i></div>
+            <h3 class="font-semibold text-white">Generation Complete</h3>
+          </div>
+          <div class="relative rounded-xl overflow-hidden border border-neon-cyan/10 mb-4 bg-black">
+            <video id="resultVideo" class="w-full rounded-xl" controls autoplay muted loop playsinline></video>
+            <div class="absolute top-3 left-3 px-2 py-1 rounded-md bg-neon-green/20 text-neon-green text-xs font-medium"><i class="fa-solid fa-check mr-1"></i>AI Generated</div>
+          </div>
+          <a id="downloadBtn" href="#" download class="w-full py-3 rounded-xl bg-gradient-to-r from-neon-green/20 to-neon-cyan/20 border border-neon-green/20 text-neon-green font-semibold text-sm flex items-center justify-center gap-2 hover:from-neon-green/30 hover:to-neon-cyan/30 transition-all duration-300"><i class="fa-solid fa-download"></i> Download Video</a>
+        </div>
+
+        <!-- API Key Invalid Card -->
+        <div id="apiKeyInvalidCard" class="glass-card p-6 hidden" style="border-color:rgba(255,0,110,0.2)">
+          <div class="flex items-start gap-4 mb-4">
+            <div class="w-12 h-12 rounded-xl bg-neon-pink/10 flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-key text-neon-pink text-lg"></i></div>
+            <div><h3 class="font-bold text-white text-lg mb-1">API Key Tidak Valid</h3><p class="text-sm text-gray-400">API Key yang Anda masukkan tidak terdaftar atau sudah tidak aktif.</p></div>
+          </div>
+          <div class="bg-neon-pink/5 border border-neon-pink/10 rounded-xl p-4 mb-4 space-y-2">
+            <div class="flex items-center gap-2 text-sm text-gray-400"><i class="fa-solid fa-circle-xmark text-neon-pink text-xs"></i><span>API Key belum terdaftar di Magnific</span></div>
+            <div class="flex items-center gap-2 text-sm text-gray-400"><i class="fa-solid fa-circle-xmark text-neon-pink text-xs"></i><span>API Key sudah expired atau dicabut</span></div>
+            <div class="flex items-center gap-2 text-sm text-gray-400"><i class="fa-solid fa-circle-xmark text-neon-pink text-xs"></i><span>Salah menyalin API Key</span></div>
+          </div>
+          <div class="bg-cyber-900/80 rounded-xl p-4 mb-4">
+            <p class="text-xs text-gray-500 mb-2 font-semibold uppercase tracking-wider">Solusi:</p>
+            <ol class="text-sm text-gray-400 space-y-1.5 list-decimal list-inside">
+              <li>Buka dashboard Magnific di <a href="https://magnific.com" target="_blank" class="text-neon-cyan hover:underline">magnific.com</a></li>
+              <li>Periksa API Key di halaman API Settings</li>
+              <li>Salin API Key yang benar dan paste ulang</li>
+            </ol>
+          </div>
+          <button id="fixApiKeyBtn" class="w-full py-3 rounded-xl bg-neon-pink/10 border border-neon-pink/20 text-neon-pink font-semibold text-sm hover:bg-neon-pink/20 transition-all duration-300 flex items-center justify-center gap-2"><i class="fa-solid fa-pen-to-square"></i> Perbaiki API Key</button>
+        </div>
+
+        <!-- API Key Limit Card -->
+        <div id="apiKeyLimitCard" class="glass-card p-6 hidden" style="border-color:rgba(251,191,36,0.2)">
+          <div class="flex items-start gap-4 mb-4">
+            <div class="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-gauge-high text-amber-400 text-lg"></i></div>
+            <div><h3 class="font-bold text-white text-lg mb-1">Limit API Tercapai</h3><p class="text-sm text-gray-400">Kuota penggunaan API Key Anda sudah habis atau melebihi batas rate limit.</p></div>
+          </div>
+          <div class="bg-amber-500/5 border border-amber-500/10 rounded-xl p-4 mb-4 space-y-2">
+            <div class="flex items-center gap-2 text-sm text-gray-400"><i class="fa-solid fa-triangle-exclamation text-amber-400 text-xs"></i><span>Rate limit exceeded — terlalu banyak request</span></div>
+            <div class="flex items-center gap-2 text-sm text-gray-400"><i class="fa-solid fa-triangle-exclamation text-amber-400 text-xs"></i><span>Kuota kredit API habis</span></div>
+            <div class="flex items-center gap-2 text-sm text-gray-400"><i class="fa-solid fa-triangle-exclamation text-amber-400 text-xs"></i><span>Plan subscription tidak mencukupi</span></div>
+          </div>
+          <div class="bg-cyber-900/80 rounded-xl p-4 mb-4">
+            <p class="text-xs text-gray-500 mb-2 font-semibold uppercase tracking-wider">Solusi:</p>
+            <ol class="text-sm text-gray-400 space-y-1.5 list-decimal list-inside">
+              <li>Tunggu beberapa menit lalu coba lagi</li>
+              <li>Upgrade plan Magnific untuk kuota lebih</li>
+              <li>Hubungi support Magnific jika masalah berlanjut</li>
+            </ol>
+          </div>
+          <div class="flex gap-3">
+            <button id="retryLimitBtn" class="flex-1 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 font-semibold text-sm hover:bg-amber-500/20 transition-all duration-300 flex items-center justify-center gap-2"><i class="fa-solid fa-rotate-right"></i> Coba Lagi</button>
+            <a href="https://magnific.com" target="_blank" class="flex-1 py-3 rounded-xl bg-cyber-900/80 border border-white/5 text-gray-400 font-semibold text-sm hover:text-white transition-all duration-300 flex items-center justify-center gap-2"><i class="fa-solid fa-arrow-up-right-from-square"></i> Upgrade Plan</a>
+          </div>
+        </div>
+
+        <!-- Error Card -->
+        <div id="errorCard" class="glass-card p-6 hidden">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-8 h-8 rounded-lg bg-neon-pink/10 flex items-center justify-center"><i class="fa-solid fa-triangle-exclamation text-neon-pink text-sm"></i></div>
+            <h3 class="font-semibold text-white">Generation Failed</h3>
+          </div>
+          <p id="errorMessage" class="text-sm text-gray-400 mb-4 bg-cyber-900/60 rounded-lg p-3 border border-neon-pink/10 whitespace-pre-wrap"></p>
+          <button id="retryBtn" class="w-full py-3 rounded-xl bg-neon-pink/10 border border-neon-pink/20 text-neon-pink font-semibold text-sm hover:bg-neon-pink/20 transition-all duration-300"><i class="fa-solid fa-rotate-right mr-2"></i>Coba Lagi</button>
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="glass-card p-10 text-center">
+          <div class="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-neon-cyan/5 to-neon-blue/5 border border-white/5 flex items-center justify-center mb-5"><i class="fa-solid fa-clapperboard text-3xl text-gray-700"></i></div>
+          <h3 class="text-lg font-semibold text-gray-500 mb-2">No Results Yet</h3>
+          <p class="text-sm text-gray-700 max-w-xs mx-auto">Upload an image, configure settings, and hit Generate</p>
+        </div>
+
+        <!-- Info Cards -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="glass-card p-4"><div class="text-2xl font-extrabold text-neon-cyan mb-1">4</div><div class="text-xs text-gray-500">AI Models</div></div>
+          <div class="glass-card p-4"><div class="text-2xl font-extrabold text-neon-blue mb-1">115MB</div><div class="text-xs text-gray-500">Max Upload</div></div>
+          <div class="glass-card p-4"><div class="text-2xl font-extrabold text-neon-purple mb-1">Kling</div><div class="text-xs text-gray-500">Engine v2/v3</div></div>
+          <div class="glass-card p-4"><div class="text-2xl font-extrabold text-neon-green mb-1">HD</div><div class="text-xs text-gray-500">Output Quality</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="relative z-10 border-t border-white/5 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm text-gray-700">
+      <span class="text-white font-semibold">ADITYA<span class="text-neon-cyan"> .AI</span></span> — AI Motion Control Generator
+    </div>
+  </footer>
+
+  <!-- TOAST -->
+  <div id="toastContainer" class="fixed top-20 right-4 z-[100] space-y-3 pointer-events-none"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
