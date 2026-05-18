@@ -1,7 +1,7 @@
 /**
  * ADITYA .AI — Backend Server
  * Mendukung Penuh: Kling V2 Standard, Kling V2 Pro, Kling V3 Standard, Kling V3 Pro
- * Fitur: Auto HTTPS File Hosting, Multi-Endpoint Status Scan Matrix, & Proxy Support (Bypass 403)
+ * Fitur: Auto HTTPS File Hosting & Multi-Endpoint Status Scan Matrix (Tanpa Proxy)
  */
 
 require('dotenv').config();
@@ -11,21 +11,10 @@ const multer = require('multer');
 const axios = require('axios');
 const fs = require('fs-extra');
 const path = require('path');
-const { HttpsProxyAgent } = require('https-proxy-agent'); // Integrasi Proxy Library
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const MAX_UPLOAD_MB = parseInt(process.env.MAX_UPLOAD_MB) || 115;
-
-// Konfigurasi Instansiasi Proxy Agent secara Dinamis
-const proxyUrl = process.env.PROXY_URL; 
-const proxyAgent = proxyUrl ? new HttpsProxyAgent(proxyUrl) : null;
-
-if (proxyAgent) {
-  console.log('[PROXY] Sistem mendeteksi PROXY_URL. Sesi request ke Magnific dialihkan via Proxy.');
-} else {
-  console.log('[PROXY] Berjalan tanpa proxy. Menggunakan koneksi IP default server.');
-}
 
 app.use(cors());
 app.use(express.json({ limit: '200mb' }));
@@ -61,6 +50,7 @@ const upload = multer({
   limits: { fileSize: MAX_UPLOAD_MB * 1024 * 1024, files: 2 }
 });
 
+// Fungsi pembersihan terjadwal (File dihapus otomatis setelah 15 menit agar server hemat kapasitas)
 function scheduleCleanup(files) {
   if (!files) return;
   const delayMs = 15 * 60 * 1000; 
@@ -73,6 +63,7 @@ function scheduleCleanup(files) {
   }, delayMs);
 }
 
+// Fungsi pembersihan instan jika terjadi gangguan transmisi sebelum dikirim ke luar
 async function immediateCleanup(files) {
   if (!files) return;
   const allFiles = Array.isArray(files) ? files : Object.values(files).flat();
@@ -123,6 +114,7 @@ app.post('/api/generate-motion', upload.fields([
 
   try {
     const jsonBody = {};
+    
     const protocol = req.headers['x-forwarded-proto'] || req.protocol;
     const host = req.get('host');
     const baseUrl = `${protocol}://${host}`;
@@ -158,32 +150,31 @@ app.post('/api/generate-motion', upload.fields([
 
     console.log('--- Requesting Magnific Kling Generation ---');
     console.log('Target API:', apiUrl);
-    console.log('Using Proxy:', !!proxyAgent);
+    console.log('Selected Engine:', mappedModel);
     console.log('---------------------------------------------');
 
-    const axiosConfig = {
-      headers: { 
-        'x-magnific-api-key': apiKey, 
-        'Content-Type': 'application/json' 
-      },
-      maxContentLength: Infinity, 
-      maxBodyLength: Infinity, 
-      timeout: 120000
-    };
-
-    // Pasang Proxy Agent ke Axios jika diaktifkan
-    if (proxyAgent) {
-      axiosConfig.httpsAgent = proxyAgent;
-    }
-
-    const magnificRes = await axios.post(apiUrl, jsonBody, axiosConfig);
+    const magnificRes = await axios.post(
+      apiUrl,
+      jsonBody,
+      {
+        headers: { 
+          'x-magnific-api-key': apiKey, 
+          'Content-Type': 'application/json' 
+        },
+        maxContentLength: Infinity, 
+        maxBodyLength: Infinity, 
+        timeout: 120000
+      }
+    );
 
     scheduleCleanup(files);
+
     console.log('[API_RESPONSE] Success Status:', magnificRes.status);
     return res.status(200).json({ success: true, data: magnificRes.data });
 
   } catch (error) {
     await immediateCleanup(files);
+    
     console.error('=== Magnific API Error ===');
     console.error('Status:', error.response?.status);
     console.error('Data:', JSON.stringify(error.response?.data || {}));
@@ -236,21 +227,15 @@ app.get('/api/task-status/:taskId', async (req, res) => {
     endpointsToCheck.unshift(preferredUrl);
   }
 
-  console.log(`[POLLING] Memulai pelacakan status otomatis (Proxy: ${!!proxyAgent}) untuk ID: ${taskId}`);
+  console.log(`[POLLING] Memulai pencarian status otomatis lintas model untuk ID: ${taskId}`);
 
   for (const url of endpointsToCheck) {
     try {
-      const axiosConfig = { 
+      const magnificRes = await axios.get(url, { 
         headers: { 'x-magnific-api-key': apiKey }, 
         timeout: 20000 
-      };
-
-      // Pasang Proxy Agent ke Axios jika diaktifkan
-      if (proxyAgent) {
-        axiosConfig.httpsAgent = proxyAgent;
-      }
-
-      const magnificRes = await axios.get(url, axiosConfig);
+      });
+      
       console.log(`[POLLING_SUCCESS] Data ditemukan di jalur: ${url}`);
       return res.status(200).json({ success: true, data: magnificRes.data });
 
@@ -261,7 +246,7 @@ app.get('/api/task-status/:taskId', async (req, res) => {
         const errorMsg = error.response.data?.message || error.response.data?.error || 'Gagal mengecek status';
         return res.status(statusCode).json({ success: false, error: errorMsg, statusCode });
       }
-      console.log(`[404 Skip] Jalur nihil pada: ${url}. Meneruskan pencarian...`);
+      console.log(`[404 Skip] Jalur ini nihil, mencoba rute cadangan berikutnya...`);
     }
   }
 
