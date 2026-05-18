@@ -1,6 +1,9 @@
 /**
- * ADITYA .AI — Backend Server (Versi Normal & Stabil)
+ * ADITYA .AI — Backend Server
+ * Mendukung Penuh: Kling V2 Standard, Kling V2 Pro, Kling V3 Standard, Kling V3 Pro
+ * Fitur: Auto HTTPS File Hosting & Multi-Endpoint Status Scan Matrix (Tanpa Proxy)
  */
+
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -11,11 +14,12 @@ const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const MAX_UPLOAD_MB = 115;
+const MAX_UPLOAD_MB = parseInt(process.env.MAX_UPLOAD_MB) || 115;
 
 app.use(cors());
 app.use(express.json({ limit: '200mb' }));
 
+// Menyajikan folder uploads secara publik agar file bisa di-download oleh server Magnific
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.static(path.join(__dirname)));
 
@@ -40,23 +44,31 @@ const fileFilter = (req, file, cb) => {
   else cb(new Error('Tipe file tidak didukung: ' + file.mimetype), false);
 };
 
-const upload = multer({ storage, fileFilter, limits: { fileSize: MAX_UPLOAD_MB * 1024 * 1024, files: 2 } });
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: MAX_UPLOAD_MB * 1024 * 1024, files: 2 }
+});
 
+// Fungsi pembersihan terjadwal (File dihapus otomatis setelah 15 menit agar server hemat kapasitas)
 function scheduleCleanup(files) {
   if (!files) return;
+  const delayMs = 15 * 60 * 1000; 
   setTimeout(async () => {
     const allFiles = Array.isArray(files) ? files : Object.values(files).flat();
     for (const file of allFiles) {
-      try { await fs.remove(file.path); console.log('[CLEANUP] Dihapus:', file.filename); } catch (e) {}
+      try { await fs.remove(file.path); console.log('[CLEANUP] File berhasil dihapus:', file.filename); } 
+      catch (e) { console.warn('[CLEANUP] Gagal menghapus file:', e.message); }
     }
-  }, 15 * 60 * 1000);
+  }, delayMs);
 }
 
+// Fungsi pembersihan instan jika terjadi gangguan transmisi sebelum dikirim ke luar
 async function immediateCleanup(files) {
   if (!files) return;
   const allFiles = Array.isArray(files) ? files : Object.values(files).flat();
   for (const file of allFiles) {
-    try { await fs.remove(file.path); } catch (e) {}
+    try { await fs.remove(file.path); } catch (e) { }
   }
 }
 
@@ -87,7 +99,11 @@ function getApiEndpoint(modelName) {
   return endpoints[modelName] || endpoints['kling-v2-standard'];
 }
 
-app.post('/api/generate-motion', upload.fields([{ name: 'image', maxCount: 1 }, { name: 'video', maxCount: 1 }]), async (req, res) => {
+/* POST /api/generate-motion */
+app.post('/api/generate-motion', upload.fields([
+  { name: 'image', maxCount: 1 },
+  { name: 'video', maxCount: 1 }
+]), async (req, res) => {
   const files = req.files;
   let apiKey = extractApiKey(req) || process.env.MAGNIFIC_API_KEY;
 
@@ -98,51 +114,103 @@ app.post('/api/generate-motion', upload.fields([{ name: 'image', maxCount: 1 }, 
 
   try {
     const jsonBody = {};
+    
     const protocol = req.headers['x-forwarded-proto'] || req.protocol;
     const host = req.get('host');
     const baseUrl = `${protocol}://${host}`;
 
     if (files && files.image && files.image[0]) {
-      jsonBody.image_url = `${baseUrl}/uploads/${files.image[0].filename}`;
+      const imgFile = files.image[0];
+      jsonBody.image_url = `${baseUrl}/uploads/${imgFile.filename}`;
+      console.log('[UPLOAD] Image URL Hosted:', jsonBody.image_url);
     } else {
       await immediateCleanup(files);
       return res.status(400).json({ success: false, error: 'Image reference wajib diupload.', statusCode: 400 });
     }
 
     if (files && files.video && files.video[0]) {
-      jsonBody.video_url = `${baseUrl}/uploads/${files.video[0].filename}`;
+      const vidFile = files.video[0];
+      jsonBody.video_url = `${baseUrl}/uploads/${vidFile.filename}`;
+      console.log('[UPLOAD] Video URL Hosted:', jsonBody.video_url);
     }
 
-    if (req.body.prompt && req.body.prompt.trim()) jsonBody.prompt = req.body.prompt.trim();
+    if (req.body.prompt && req.body.prompt.trim()) {
+      jsonBody.prompt = req.body.prompt.trim();
+    }
+
     jsonBody.character_orientation = "video";
-    
+
     const cfgScale = parseFloat(req.body.cfg_scale);
-    if (!isNaN(cfgScale)) jsonBody.cfg_scale = cfgScale;
+    if (!isNaN(cfgScale)) {
+      jsonBody.cfg_scale = cfgScale;
+    }
 
     const mappedModel = mapModelName(req.body.model || 'kling-v2-standard');
     const apiUrl = getApiEndpoint(mappedModel);
 
-    const magnificRes = await axios.post(apiUrl, jsonBody, {
-      headers: { 'x-magnific-api-key': apiKey, 'Content-Type': 'application/json' },
-      maxContentLength: Infinity, maxBodyLength: Infinity, timeout: 120000
-    });
+    console.log('--- Requesting Magnific Kling Generation ---');
+    console.log('Target API:', apiUrl);
+    console.log('Selected Engine:', mappedModel);
+    console.log('---------------------------------------------');
+
+    const magnificRes = await axios.post(
+      apiUrl,
+      jsonBody,
+      {
+        headers: { 
+          'x-magnific-api-key': apiKey, 
+          'Content-Type': 'application/json' 
+        },
+        maxContentLength: Infinity, 
+        maxBodyLength: Infinity, 
+        timeout: 120000
+      }
+    );
 
     scheduleCleanup(files);
+
+    console.log('[API_RESPONSE] Success Status:', magnificRes.status);
     return res.status(200).json({ success: true, data: magnificRes.data });
 
   } catch (error) {
     await immediateCleanup(files);
+    
+    console.error('=== Magnific API Error ===');
+    console.error('Status:', error.response?.status);
+    console.error('Data:', JSON.stringify(error.response?.data || {}));
+    console.error('===========================');
+
     const statusCode = error.response?.status || 500;
-    const errorMsg = error.response?.data?.message || error.message || 'Server error';
-    return res.status(statusCode).json({ success: false, error: errorMsg, statusCode });
+    let errorMsg = 'Server error';
+
+    if (error.response?.data) {
+      const errData = error.response.data;
+      if (errData.message && errData.invalid_params) {
+        errorMsg = errData.message + ' — ' + errData.invalid_params.map(p => p.field + ': ' + p.reason).join('; ');
+      } else if (errData.detail) {
+        errorMsg = Array.isArray(errData.detail) ? errData.detail.map(d => (d.loc ? d.loc.join(' > ') + ': ' : '') + d.msg).join('; ') : String(errData.detail);
+      } else if (errData.error) {
+        errorMsg = typeof errData.error === 'string' ? errData.error : JSON.stringify(errData.error);
+      } else if (errData.message) {
+        errorMsg = String(errData.message);
+      } else {
+        errorMsg = JSON.stringify(errData).substring(0, 300);
+      }
+    } else {
+      errorMsg = error.message || 'Server error';
+    }
+
+    return res.status(statusCode).json({ success: false, error: errorMsg, statusCode: statusCode });
   }
 });
 
+/* GET /api/task-status/:taskId */
 app.get('/api/task-status/:taskId', async (req, res) => {
   let apiKey = extractApiKey(req) || process.env.MAGNIFIC_API_KEY;
   if (!apiKey) return res.status(401).json({ success: false, error: 'API Key diperlukan.', statusCode: 401 });
 
   const taskId = req.params.taskId;
+
   const endpointsToCheck = [
     `https://api.magnific.com/v1/ai/video/kling-v3-motion-control-std/${taskId}`,
     `https://api.magnific.com/v1/ai/video/kling-v3-motion-control-pro/${taskId}`,
@@ -159,22 +227,46 @@ app.get('/api/task-status/:taskId', async (req, res) => {
     endpointsToCheck.unshift(preferredUrl);
   }
 
+  console.log(`[POLLING] Memulai pencarian status otomatis lintas model untuk ID: ${taskId}`);
+
   for (const url of endpointsToCheck) {
     try {
-      const magnificRes = await axios.get(url, { headers: { 'x-magnific-api-key': apiKey }, timeout: 20000 });
+      const magnificRes = await axios.get(url, { 
+        headers: { 'x-magnific-api-key': apiKey }, 
+        timeout: 20000 
+      });
+      
+      console.log(`[POLLING_SUCCESS] Data ditemukan di jalur: ${url}`);
       return res.status(200).json({ success: true, data: magnificRes.data });
+
     } catch (error) {
       if (error.response && error.response.status !== 404) {
+        console.error(`[POLLING_BLOCKED] Deteksi error non-404 (${error.response.status}):`, error.response.data);
         const statusCode = error.response.status;
-        const errorMsg = error.response.data?.message || 'Gagal mengecek status';
+        const errorMsg = error.response.data?.message || error.response.data?.error || 'Gagal mengecek status';
         return res.status(statusCode).json({ success: false, error: errorMsg, statusCode });
       }
+      console.log(`[404 Skip] Jalur ini nihil, mencoba rute cadangan berikutnya...`);
     }
   }
 
-  return res.status(404).json({ success: false, error: 'Task ID tidak ditemukan.', statusCode: 404 });
+  return res.status(404).json({ 
+    success: false, 
+    error: 'Task ID tidak ditemukan di rute manapun pada server Magnific Kling.', 
+    statusCode: 404 
+  });
+});
+
+/* Error Handler */
+app.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ success: false, error: 'File melebihi batas ' + MAX_UPLOAD_MB + 'MB', statusCode: 413 });
+    return res.status(400).json({ success: false, error: 'Upload error: ' + err.message, statusCode: 400 });
+  }
+  if (err) return res.status(500).json({ success: false, error: err.message || 'Server error', statusCode: 500 });
+  next();
 });
 
 app.listen(PORT, () => {
-  console.log('\n  ADITYA .AI Server Running on Port:' + PORT + '\n');
+  console.log('\n  ADITYA .AI Server Running on http://localhost:' + PORT + '\n');
 });
