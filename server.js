@@ -1,8 +1,7 @@
 /**
  * ADITYA .AI — Backend Server
  * Mendukung Penuh: Kling V2 Standard, Kling V2 Pro, Kling V3 Standard, Kling V3 Pro
- * Fitur: Auto HTTPS File Hosting, Multi-Endpoint Status Scan Matrix, & Proxy Support (Bypass 403)
- * FIX: Added Rate Limiter & Smart Polling to prevent IP Block (403)
+ * Fitur: Auto HTTPS File Hosting & Multi-Endpoint Status Scan Matrix (Tanpa Proxy)
  */
 
 require('dotenv').config();
@@ -12,41 +11,17 @@ const multer = require('multer');
 const axios = require('axios');
 const fs = require('fs-extra');
 const path = require('path');
-const rateLimit = require('express-rate-limit'); // Tambahkan Rate Limiter
-const { HttpsProxyAgent } = require('https-proxy-agent');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const MAX_UPLOAD_MB = parseInt(process.env.MAX_UPLOAD_MB) || 115;
 
-// Konfigurasi Instansiasi Proxy Agent secara Dinamis
-const proxyUrl = process.env.PROXY_URL; 
-const proxyAgent = proxyUrl ? new HttpsProxyAgent(proxyUrl) : null;
-
-if (proxyAgent) {
-  console.log('[PROXY] Sistem mendeteksi PROXY_URL. Sesi request ke Magnific dialihkan via Proxy.');
-} else {
-  console.log('[PROXY] Berjalan tanpa proxy. Menggunakan koneksi IP default server.');
-}
-
 app.use(cors());
 app.use(express.json({ limit: '200mb' }));
 
-// Menyajikan folder uploads secara publik
+// Menyajikan folder uploads secara publik agar file bisa di-download oleh server Magnific
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.static(path.join(__dirname)));
-
-// Rate Limiter untuk mencegah frontend polling terlalu cepat (Maks 6 request per 15 detik)
-const statusLimiter = rateLimit({
-  windowMs: 15 * 1000, // 15 detik
-  max: 6, // Maksimal 6 pengecekan dalam 15 detik
-  message: { success: false, error: 'Polling terlalu cepat. Coba lagi beberapa saat.', statusCode: 429 },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-// Helper function untuk delay
-const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -75,6 +50,7 @@ const upload = multer({
   limits: { fileSize: MAX_UPLOAD_MB * 1024 * 1024, files: 2 }
 });
 
+// Fungsi pembersihan terjadwal (File dihapus otomatis setelah 15 menit agar server hemat kapasitas)
 function scheduleCleanup(files) {
   if (!files) return;
   const delayMs = 15 * 60 * 1000; 
@@ -87,6 +63,7 @@ function scheduleCleanup(files) {
   }, delayMs);
 }
 
+// Fungsi pembersihan instan jika terjadi gangguan transmisi sebelum dikirim ke luar
 async function immediateCleanup(files) {
   if (!files) return;
   const allFiles = Array.isArray(files) ? files : Object.values(files).flat();
@@ -137,6 +114,7 @@ app.post('/api/generate-motion', upload.fields([
 
   try {
     const jsonBody = {};
+    
     const protocol = req.headers['x-forwarded-proto'] || req.protocol;
     const host = req.get('host');
     const baseUrl = `${protocol}://${host}`;
@@ -172,31 +150,31 @@ app.post('/api/generate-motion', upload.fields([
 
     console.log('--- Requesting Magnific Kling Generation ---');
     console.log('Target API:', apiUrl);
-    console.log('Using Proxy:', !!proxyAgent);
+    console.log('Selected Engine:', mappedModel);
     console.log('---------------------------------------------');
 
-    const axiosConfig = {
-      headers: { 
-        'x-magnific-api-key': apiKey, 
-        'Content-Type': 'application/json' 
-      },
-      maxContentLength: Infinity, 
-      maxBodyLength: Infinity, 
-      timeout: 120000
-    };
-
-    if (proxyAgent) {
-      axiosConfig.httpsAgent = proxyAgent;
-    }
-
-    const magnificRes = await axios.post(apiUrl, jsonBody, axiosConfig);
+    const magnificRes = await axios.post(
+      apiUrl,
+      jsonBody,
+      {
+        headers: { 
+          'x-magnific-api-key': apiKey, 
+          'Content-Type': 'application/json' 
+        },
+        maxContentLength: Infinity, 
+        maxBodyLength: Infinity, 
+        timeout: 120000
+      }
+    );
 
     scheduleCleanup(files);
+
     console.log('[API_RESPONSE] Success Status:', magnificRes.status);
     return res.status(200).json({ success: true, data: magnificRes.data });
 
   } catch (error) {
     await immediateCleanup(files);
+    
     console.error('=== Magnific API Error ===');
     console.error('Status:', error.response?.status);
     console.error('Data:', JSON.stringify(error.response?.data || {}));
@@ -226,14 +204,14 @@ app.post('/api/generate-motion', upload.fields([
   }
 });
 
-/* GET /api/task-status/:taskId - DILINDUNGI RATE LIMITER */
-app.get('/api/task-status/:taskId', statusLimiter, async (req, res) => {
+/* GET /api/task-status/:taskId */
+app.get('/api/task-status/:taskId', async (req, res) => {
   let apiKey = extractApiKey(req) || process.env.MAGNIFIC_API_KEY;
   if (!apiKey) return res.status(401).json({ success: false, error: 'API Key diperlukan.', statusCode: 401 });
 
   const taskId = req.params.taskId;
 
-  let endpointsToCheck = [
+  const endpointsToCheck = [
     `https://api.magnific.com/v1/ai/video/kling-v3-motion-control-std/${taskId}`,
     `https://api.magnific.com/v1/ai/video/kling-v3-motion-control-pro/${taskId}`,
     `https://api.magnific.com/v1/ai/video/kling-v2-6-motion-control-std/${taskId}`,
@@ -241,57 +219,34 @@ app.get('/api/task-status/:taskId', statusLimiter, async (req, res) => {
     `https://api.magnific.com/v1/ai/video/${taskId}`
   ];
 
-  // OPTIMASI PENTING: Jika frontend mengirim model, HANYA cek endpoint model tersebut!
-  // Ini mencegah 4 request tidak perlu yang memicu blokir IP.
   if (req.query.model) {
     const mappedModel = mapModelName(req.query.model);
     const preferredUrl = `${getApiEndpoint(mappedModel)}/${taskId}`;
-    endpointsToCheck = [preferredUrl]; // Override array, hanya cek 1 endpoint
+    const index = endpointsToCheck.indexOf(preferredUrl);
+    if (index > -1) endpointsToCheck.splice(index, 1);
+    endpointsToCheck.unshift(preferredUrl);
   }
 
-  console.log(`[POLLING] Cek status ID: ${taskId} | Jumlah Endpoint: ${endpointsToCheck.length} | Proxy: ${!!proxyAgent}`);
+  console.log(`[POLLING] Memulai pencarian status otomatis lintas model untuk ID: ${taskId}`);
 
-  for (let i = 0; i < endpointsToCheck.length; i++) {
-    const url = endpointsToCheck[i];
+  for (const url of endpointsToCheck) {
     try {
-      const axiosConfig = { 
+      const magnificRes = await axios.get(url, { 
         headers: { 'x-magnific-api-key': apiKey }, 
         timeout: 20000 
-      };
-
-      if (proxyAgent) {
-        axiosConfig.httpsAgent = proxyAgent;
-      }
-
-      const magnificRes = await axios.get(url, axiosConfig);
+      });
+      
       console.log(`[POLLING_SUCCESS] Data ditemukan di jalur: ${url}`);
       return res.status(200).json({ success: true, data: magnificRes.data });
 
     } catch (error) {
-      if (error.response) {
-        // JIKA KENA 403, LANGSUNG HENTIKAN PENCARIAN! Jangan lanjut cek endpoint lain.
-        if (error.response.status === 403) {
-          console.error(`[POLLING_BLOCKED] IP Diblokir (403). Berhenti memeriksa endpoint lain agar tidak makin parah.`);
-          return res.status(403).json({ 
-            success: false, 
-            error: 'Sementara diblokir oleh Magnific (Rate Limit). Harap tunggu beberapa saat sebelum polling lagi.', 
-            statusCode: 403 
-          });
-        }
-        
-        // Jika error selain 404 (misal 500), langsung lempar error
-        if (error.response.status !== 404) {
-          const statusCode = error.response.status;
-          const errorMsg = error.response.data?.message || error.response.data?.error || 'Gagal mengecek status';
-          return res.status(statusCode).json({ success: false, error: errorMsg, statusCode });
-        }
+      if (error.response && error.response.status !== 404) {
+        console.error(`[POLLING_BLOCKED] Deteksi error non-404 (${error.response.status}):`, error.response.data);
+        const statusCode = error.response.status;
+        const errorMsg = error.response.data?.message || error.response.data?.error || 'Gagal mengecek status';
+        return res.status(statusCode).json({ success: false, error: errorMsg, statusCode });
       }
-      
-      // Jika 404, beri jeda 1 detik sebelum mencoba endpoint berikutnya (jika ada)
-      if (i < endpointsToCheck.length - 1) {
-        console.log(`[404 Skip] Jalur nihil pada: ${url}. Menunggu 1 detik sebelum mencoba fallback...`);
-        await delay(1000); // Jeda 1 detik agar tidak spam server
-      }
+      console.log(`[404 Skip] Jalur ini nihil, mencoba rute cadangan berikutnya...`);
     }
   }
 
