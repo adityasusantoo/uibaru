@@ -1,6 +1,7 @@
 /**
  * ADITYA .AI — Backend Server
- * Menghos file sementara dan mengirimkan HTTPS URL ke Magnific
+ * Mendukung Penuh: Kling V2 Standard, Kling V2 Pro, Kling V3 Standard, Kling V3 Pro
+ * Fitur: Auto HTTPS File Hosting & Multi-Endpoint Status Scan Matrix
  */
 
 require('dotenv').config();
@@ -18,7 +19,7 @@ const MAX_UPLOAD_MB = parseInt(process.env.MAX_UPLOAD_MB) || 115;
 app.use(cors());
 app.use(express.json({ limit: '200mb' }));
 
-// MENYAJIKAN FOLDER UPLOADS SECARA PUBLIK AGAR BISA DIAKSES MAGNIFIC
+// Menyajikan folder uploads secara publik agar file bisa di-download oleh server Magnific
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.static(path.join(__dirname)));
 
@@ -49,20 +50,20 @@ const upload = multer({
   limits: { fileSize: MAX_UPLOAD_MB * 1024 * 1024, files: 2 }
 });
 
-// FUNGSI UNTUK MENGHAPUS FILE SECARA OTOMATIS SETELAH DELAY WAKTU (15 MENIT)
+// Fungsi pembersihan terjadwal (File dihapus otomatis setelah 15 menit agar server hemat kapasitas)
 function scheduleCleanup(files) {
   if (!files) return;
-  const delayMs = 15 * 60 * 1000; // 15 Menit
+  const delayMs = 15 * 60 * 1000; 
   setTimeout(async () => {
     const allFiles = Array.isArray(files) ? files : Object.values(files).flat();
     for (const file of allFiles) {
-      try { await fs.remove(file.path); console.log('Cleanup sukses:', file.filename); } 
-      catch (e) { console.warn('Cleanup error:', e.message); }
+      try { await fs.remove(file.path); console.log('[CLEANUP] File berhasil dihapus:', file.filename); } 
+      catch (e) { console.warn('[CLEANUP] Gagal menghapus file:', e.message); }
     }
   }, delayMs);
 }
 
-// FUNGSI UNTUK HAPUS INSTAN (JIKA TERJADI ERROR SEBELUM DIKIRIM KE MAGNIFIC)
+// Fungsi pembersihan instan jika terjadi gangguan transmisi sebelum dikirim ke luar
 async function immediateCleanup(files) {
   if (!files) return;
   const allFiles = Array.isArray(files) ? files : Object.values(files).flat();
@@ -78,6 +79,7 @@ function extractApiKey(req) {
   return parts.length === 2 && parts[0] === 'Bearer' ? parts[1] : auth;
 }
 
+// 1. PEMETAAN DATA MODEL DARI FRONTEND UI
 function mapModelName(model) {
   const modelMap = {
     'kling-v2-standard': 'kling-v2-standard',
@@ -88,6 +90,7 @@ function mapModelName(model) {
   return modelMap[model] || model;
 }
 
+// 2. PEMETAAN ENDPOINT GENERATOR SESUAI DOKUMENTASI RESMI MAGNIFIC KLING V2 & V3
 function getApiEndpoint(modelName) {
   const endpoints = {
     'kling-v2-standard': 'https://api.magnific.com/v1/ai/video/kling-v2-6-motion-control-std',
@@ -114,29 +117,33 @@ app.post('/api/generate-motion', upload.fields([
   try {
     const jsonBody = {};
     
+    // Konfigurasi URL publik dinamis dari Railway
     const protocol = req.headers['x-forwarded-proto'] || req.protocol;
     const host = req.get('host');
     const baseUrl = `${protocol}://${host}`;
 
+    // Host gambar ke Railway secara temporer
     if (files && files.image && files.image[0]) {
       const imgFile = files.image[0];
       jsonBody.image_url = `${baseUrl}/uploads/${imgFile.filename}`;
-      console.log('Image Hosted At:', jsonBody.image_url);
+      console.log('[UPLOAD] Image URL Hosted:', jsonBody.image_url);
     } else {
       await immediateCleanup(files);
       return res.status(400).json({ success: false, error: 'Image reference wajib diupload.', statusCode: 400 });
     }
 
+    // Host video reference ke Railway jika dilampirkan
     if (files && files.video && files.video[0]) {
       const vidFile = files.video[0];
       jsonBody.video_url = `${baseUrl}/uploads/${vidFile.filename}`;
-      console.log('Video Hosted At:', jsonBody.video_url);
+      console.log('[UPLOAD] Video URL Hosted:', jsonBody.video_url);
     }
 
     if (req.body.prompt && req.body.prompt.trim()) {
       jsonBody.prompt = req.body.prompt.trim();
     }
 
+    // Mengatur orientasi wajib
     jsonBody.character_orientation = "video";
 
     const cfgScale = parseFloat(req.body.cfg_scale);
@@ -147,9 +154,10 @@ app.post('/api/generate-motion', upload.fields([
     const mappedModel = mapModelName(req.body.model || 'kling-v2-standard');
     const apiUrl = getApiEndpoint(mappedModel);
 
-    console.log('--- Request ke Magnific API (JSON URL) ---');
-    console.log('Endpoint:', apiUrl);
-    console.log('------------------------------------------');
+    console.log('--- Requesting Magnific Kling Generation ---');
+    console.log('Target API:', apiUrl);
+    console.log('Selected Engine:', mappedModel);
+    console.log('---------------------------------------------');
 
     const magnificRes = await axios.post(
       apiUrl,
@@ -165,9 +173,10 @@ app.post('/api/generate-motion', upload.fields([
       }
     );
 
+    // Jadwalkan penghapusan file temporer (15 menit kemudian) agar aman dari over-storage
     scheduleCleanup(files);
 
-    console.log('Magnific Response:', magnificRes.status);
+    console.log('[API_RESPONSE] Success Status:', magnificRes.status);
     return res.status(200).json({ success: true, data: magnificRes.data });
 
   } catch (error) {
@@ -175,7 +184,7 @@ app.post('/api/generate-motion', upload.fields([
     
     console.error('=== Magnific API Error ===');
     console.error('Status:', error.response?.status);
-    console.error('Data:', JSON.stringify(error.response?.data || {}).substring(0, 1000));
+    console.error('Data:', JSON.stringify(error.response?.data || {}));
     console.error('===========================');
 
     const statusCode = error.response?.status || 500;
@@ -207,42 +216,60 @@ app.get('/api/task-status/:taskId', async (req, res) => {
   let apiKey = extractApiKey(req) || process.env.MAGNIFIC_API_KEY;
   if (!apiKey) return res.status(401).json({ success: false, error: 'API Key diperlukan.', statusCode: 401 });
 
-  try {
-    // FIX FINAL: Menggunakan global status endpoint Magnific video agar tidak terjadi 404 Not Found
-    const statusApiUrl = `https://api.magnific.com/v1/ai/video/${req.params.taskId}`;
+  const taskId = req.params.taskId;
 
-    console.log('Checking status at:', statusApiUrl);
+  // MATRIX ROUTING MATRIX: Mencakup seluruh kombinasi endpoint pelacakan status Kling V2 & V3
+  const endpointsToCheck = [
+    `https://api.magnific.com/v1/ai/video/kling-v3-motion-control-std/${taskId}`,
+    `https://api.magnific.com/v1/ai/video/kling-v3-motion-control-pro/${taskId}`,
+    `https://api.magnific.com/v1/ai/video/kling-v2-6-motion-control-std/${taskId}`,
+    `https://api.magnific.com/v1/ai/video/kling-v2-6-motion-control-pro/${taskId}`,
+    `https://api.magnific.com/v1/ai/video/${taskId}`
+  ];
 
-    const magnificRes = await axios.get(
-      statusApiUrl,
-      { headers: { 'x-magnific-api-key': apiKey }, timeout: 30000 }
-    );
-
-    return res.status(200).json({ success: true, data: magnificRes.data });
-
-  } catch (error) {
-    // FALLBACK: Jika URL global error, coba gunakan URL spesifik model sebagai cadangan
-    if (error.response?.status === 404) {
-      try {
-        const model = req.query.model || 'kling-v2-standard';
-        const fallbackUrl = `${getApiEndpoint(model)}/${req.params.taskId}`;
-        console.log('404 encountered, trying fallback URL:', fallbackUrl);
-        
-        const magnificRes = await axios.get(
-          fallbackUrl,
-          { headers: { 'x-magnific-api-key': apiKey }, timeout: 30000 }
-        );
-        return res.status(200).json({ success: true, data: magnificRes.data });
-      } catch (fallbackError) {
-        console.error('All Status Check Endpoints Failed');
-      }
-    }
-
-    console.error('Status Check Error:', error.response?.data || error.message);
-    const statusCode = error.response?.status || 500;
-    const errorMsg = error.response?.data?.error || error.response?.data?.message || error.response?.data?.detail || error.message || 'Gagal mengecek status';
-    return res.status(statusCode).json({ success: false, error: typeof errorMsg === 'object' ? JSON.stringify(errorMsg) : errorMsg, statusCode: statusCode });
+  // Prioritaskan endpoint model pilihan dari frontend di urutan pertama array agar eksekusi lebih cepat
+  if (req.query.model) {
+    const mappedModel = mapModelName(req.query.model);
+    const preferredUrl = `${getApiEndpoint(mappedModel)}/${taskId}`;
+    const index = endpointsToCheck.indexOf(preferredUrl);
+    if (index > -1) endpointsToCheck.splice(index, 1);
+    endpointsToCheck.unshift(preferredUrl);
   }
+
+  console.log(`[POLLING] Memulai pencarian status otomatis lintas model untuk ID: ${taskId}`);
+
+  // Loop sinkronisasi menyisir satu per satu jalur API Magnific
+  for (const url of endpointsToCheck) {
+    try {
+      const magnificRes = await axios.get(url, { 
+        headers: { 'x-magnific-api-key': apiKey }, 
+        timeout: 20000 
+      });
+      
+      // Jika respons sukses (Status 200), hentikan loop dan langsung kirim data ke pengguna
+      console.log(`[POLLING_SUCCESS] Data ditemukan di jalur: ${url}`);
+      return res.status(200).json({ success: true, data: magnificRes.data });
+
+    } catch (error) {
+      // Jika terjadi error dari Magnific tetapi BUKAN 404 (misalnya token mati/401 atau rate limit/429), langsung stop loop
+      if (error.response && error.response.status !== 404) {
+        console.error(`[POLLING_BLOCKED] Deteksi error non-404 (${error.response.status}):`, error.response.data);
+        const statusCode = error.response.status;
+        const errorMsg = error.response.data?.message || error.response.data?.error || 'Gagal mengecek status';
+        return res.status(statusCode).json({ success: false, error: errorMsg, statusCode });
+      }
+      
+      // Jika murni 404, server mencatat log lalu otomatis mencoba rute berikutnya di array matrix
+      console.log(`[404 Skip] Jalur ini nihil, mencoba rute cadangan berikutnya...`);
+    }
+  }
+
+  // Jika semua jalur sudah dicoba dan hasilnya nihil 404
+  return res.status(404).json({ 
+    success: false, 
+    error: 'Task ID tidak ditemukan di rute manapun pada server Magnific Kling.', 
+    statusCode: 404 
+  });
 });
 
 /* Error Handler */
